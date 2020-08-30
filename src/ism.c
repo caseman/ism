@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <inttypes.h>
 #include <ism.h>
-#include <fastrng.h>
-#include <perlin.h>
+#include "fastrng.h"
+#include "perlin.h"
 
 int main(int argc, char *argv[]) {
     uint32_t seed = strtoumax(argv[1], NULL, 10);
