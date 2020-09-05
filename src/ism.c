@@ -30,12 +30,12 @@ int main(int argc, char* argv[]) {
         .ocean_level = 0,
 
         .land_mass_scale = 3,
-        .fault_scale = 6,
-        .erosion_scale = 6,
+        .fault_scale = 10,
+        .erosion_scale = 8,
 
         .coast_complexity = 8,
         .fault_complexity = 8,
-        .erosion_complexity = 8,
+        .erosion_complexity = 12,
     };
 
     mainview view = {

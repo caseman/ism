@@ -44,21 +44,20 @@ map *map_generate(map_config config) {
 
             fault = fbm_noise2(ptable, longitude, latitude,
                 config.fault_scale, config.fault_complexity, 0.5f);
-            fault = fault * fault;
             erosion = fabsf(fbm_noise2(ptable, longitude, latitude,
                 config.erosion_scale, config.erosion_complexity, 0.85f));
 
             /* drop off elevation near poles */
             elevation *= log10f(10.f - dist2equator * 6.f);
 
-            rugged = elevation + fault*2.f - erosion*8.f;
+            rugged = fault - erosion;
 
-            if (elevation + fault - erosion < config.ocean_level * 2.f) {
+            if (elevation + fault - erosion*0.25f < config.ocean_level * 1.5f) {
                 tile->terrain = ocean;
-            } else if (rugged * rugged > 0.25f) {
-                tile->terrain = hill;
-            } else if (rugged > 0.1f) {
+            } else if ((rugged > 0.09f && rugged < 0.13f) || rugged > 0.85f) {
                 tile -> terrain = mountain;
+            } else if ((rugged > -0.02f && rugged <= 0.02f) || (rugged > 0.16f && rugged < 0.19f)) {
+                tile->terrain = hill;
             } else {
                 tile->terrain = flat;
             }
