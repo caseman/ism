@@ -31,7 +31,9 @@ map *map_generate(map_config config) {
 
     float widthf = (float)config.width, heightf = (float)config.height;
     m->config = config;
-    tile_data *tile = m->tiles;
+    tile_data* tile = m->tiles;
+    tile_data* windward_tile = m->tiles;
+    float moisture = 0;
 
     for (int x = 0; x < config.width; x++) {
         tile->moisture = 0;
@@ -63,12 +65,28 @@ map *map_generate(map_config config) {
                 tile -> terrain = mountain;
             } else if ((rugged > -0.02f && rugged <= 0.02f) || (rugged > 0.16f && rugged < 0.19f)) {
                 tile->terrain = hill;
+            } else if (rugged <= 0 && rugged * rugged > 0.04f) {
+                tile->terrain = canyon;
             } else {
                 tile->terrain = flat;
             }
 
-            tile->moisture = 0;
+            if (tile->terrain == ocean || tile->terrain == lake) {
+                if (moisture < 1.f) {
+                    moisture += 0.1f;
+                }
+            } else if (tile->terrain == mountain) {
+                moisture *= 0.5f;
+                windward_tile->moisture += moisture;
+            } else {
+                if (moisture > 0.f) {
+                    moisture -= 0.05f;
+                }
+            }
+            tile->moisture = moisture;
             tile++;
+            windward_tile++;
+            moisture = (moisture + windward_tile->moisture) * 0.5f;
         }
     }
 

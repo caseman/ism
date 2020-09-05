@@ -1,14 +1,16 @@
 #include "cccompat.h"
 
 enum map_terrain {
-    ocean = 0x0,
-    lake  = 0x2,
-    river = 0x4,
+    lake  = 0,
+    river = 1,
+    ocean = 2,
 
-    flat = 0x1,
-    hill = 0x3,
-    mountain = 0x5,
-    glacier = 0x7,
+    flat = 3,
+    hill = 4,
+    mountain = 5,
+    canyon = 6,
+    glacier = 7,
+
 };
 
 typedef struct {
