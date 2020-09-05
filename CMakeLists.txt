@@ -13,12 +13,26 @@ configure_file(src/ism.h.in include/ism.h)
 add_library(fastrng STATIC src/cccompat.h src/fastrng.h src/fastrng.c)
 add_library(perlin STATIC src/perlin.h src/perlin.c)
 add_library(map STATIC src/map.h src/map.c)
+add_library(view STATIC src/mainview.h src/mainview.c)
+
+set(RESOURCE_FILES
+    resources/Hack-Regular.ttf
+)
+
+add_executable(ism
+    src/ism.c
+    ${RESOURCE_FILES}
+)
 
 IF(APPLE)
     # Build app bundle
     set(BEARLIBTERMINAL_LIB "${PROJECT_SOURCE_DIR}/lib/libBearLibTerminal.dylib")
     # TODO icon and plist
-    add_executable(ism MACOSX_BUNDLE src/ism.c)
+    set_target_properties(ism PROPERTIES
+        MACOSX_BUNDLE TRUE
+        MACOSX_FRAMEWORK_IDENTIFIER org.caseman.ism
+        RESOURCE "${RESOURCE_FILES}"
+    )
     set(BUNDLE_FRAMEWORK_PATH "${CMAKE_BINARY_DIR}/ism.app/Contents/MacOS")
     file(COPY ${BEARLIBTERMINAL_LIB} DESTINATION ${BUNDLE_FRAMEWORK_PATH}
         FILE_PERMISSIONS OWNER_READ OWNER_WRITE
@@ -27,7 +41,7 @@ IF(APPLE)
 ENDIF(APPLE)
 # TODO Linux, etc.
 
-target_link_libraries(ism fastrng perlin
+target_link_libraries(ism fastrng perlin map view
     ${BEARLIBTERMINAL_LIB}
 )
 target_include_directories(ism PUBLIC
