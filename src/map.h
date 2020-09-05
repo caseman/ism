@@ -7,7 +7,8 @@ enum map_terrain {
 
     flat = 0x1,
     hill = 0x3,
-    mountain = 0x5
+    mountain = 0x5,
+    glacier = 0x7,
 };
 
 typedef struct {
@@ -19,6 +20,7 @@ typedef struct {
 
 typedef struct {
     enum map_terrain terrain;
+    float moisture;
 } tile_data;
 
 typedef struct {

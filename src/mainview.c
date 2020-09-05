@@ -9,13 +9,15 @@ typedef struct {
     int yoffset;
 } tile_style;
 
-static tile_style tstyle[6] = {
+static tile_style tstyle[8] = {
     {0xFF0000AF, 0xFF3333FF, 0x2248, 0x0020, 5, -1}, // Ocean
     {0xFF009900, 0xFF00FF00, 0x0022, 0x0022, 2, 7}, // Flat
-    {0, 0, 0},
+    {0, 0, 0, 0, 0, 0},
     {0xFF009900, 0xFF002200, 0x25E0, 0x0020, 5, 1}, // Hill
-    {0, 0, 0},
+    {0, 0, 0, 0, 0, 0},
     {0xFF555555, 0xFFDDDDDD, 0x25E2, 0x25E3, 1, -1}, // Mountain
+    {0, 0, 0, 0, 0, 0},
+    {0xFF5599DD, 0xFFCCFFFF, 0x22DA, 0x0020, 5, 0}, // Glacier
 };
 
 static void draw_tile(int x, int y, tile_data* tile)

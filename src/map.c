@@ -33,7 +33,13 @@ map *map_generate(map_config config) {
     m->config = config;
     tile_data *tile = m->tiles;
 
-    for (int y = 0; y < config.height; y++) {
+    for (int x = 0; x < config.width; x++) {
+        tile->moisture = 0;
+        tile->terrain = glacier;
+        tile++;
+    }
+
+    for (int y = 1; y < config.height - 1; y++) {
         latitude = (heightf - (float)y) / heightf;
         dist2equator = fabsf(heightf - (float)y * 2.0f) / heightf;
         for (int x = 0; x < config.width; x++) {
@@ -47,12 +53,11 @@ map *map_generate(map_config config) {
             erosion = fabsf(fbm_noise2(ptable, longitude, latitude,
                 config.erosion_scale, config.erosion_complexity, 0.85f));
 
-            /* drop off elevation near poles */
-            elevation *= log10f(10.f - dist2equator * 6.f);
-
             rugged = fault - erosion;
 
-            if (elevation + fault - erosion*0.25f < config.ocean_level * 1.5f) {
+            if (dist2equator * dist2equator + rugged > 0.85f || dist2equator - erosion > 0.88f) {
+                tile->terrain = glacier;
+            } else if (elevation + fault - erosion*0.25f < config.ocean_level * 1.5f) {
                 tile->terrain = ocean;
             } else if ((rugged > 0.09f && rugged < 0.13f) || rugged > 0.85f) {
                 tile -> terrain = mountain;
@@ -62,9 +67,17 @@ map *map_generate(map_config config) {
                 tile->terrain = flat;
             }
 
+            tile->moisture = 0;
             tile++;
         }
     }
+
+    for (int x = 0; x < config.width; x++) {
+        tile->moisture = 0;
+        tile->terrain = glacier;
+        tile++;
+    }
+
     return m;
 }
 
