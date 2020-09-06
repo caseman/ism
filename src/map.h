@@ -22,6 +22,7 @@ typedef struct {
 
 typedef struct {
     enum map_terrain terrain;
+    float elevation;
     float moisture;
 } tile_data;
 

@@ -59,13 +59,13 @@ map *map_generate(map_config config) {
 
             if (dist2equator * dist2equator + rugged > 0.85f || dist2equator - erosion > 0.88f) {
                 tile->terrain = glacier;
-            } else if (elevation + fault - erosion*0.25f < config.ocean_level * 1.5f) {
+            } else if (elevation + fault - erosion*0.3f < config.ocean_level * 1.5f) {
                 tile->terrain = ocean;
-            } else if ((rugged > 0.09f && rugged < 0.13f) || rugged > 0.85f) {
+            } else if ((rugged > 0.09f && rugged < 0.13f) || rugged > 0.8f) {
                 tile -> terrain = mountain;
             } else if ((rugged > -0.02f && rugged <= 0.02f) || (rugged > 0.16f && rugged < 0.19f)) {
                 tile->terrain = hill;
-            } else if (rugged <= 0 && rugged * rugged > 0.04f) {
+            } else if (rugged <= 0 && rugged * rugged > 0.03f) {
                 tile->terrain = canyon;
             } else {
                 tile->terrain = flat;
@@ -84,6 +84,7 @@ map *map_generate(map_config config) {
                 }
             }
             tile->moisture = moisture;
+            tile->elevation = elevation + fault - erosion*0.3f;
             tile++;
             windward_tile++;
             moisture = (moisture + windward_tile->moisture) * 0.5f;
