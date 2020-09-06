@@ -12,6 +12,7 @@ typedef struct {
 color_t ocean_shades[] = {0xFF000023, 0xFF000046, 0xFF000069, 0xFF00008C, 0xFF0000AF};
 color_t grass_shades[] = {0xFF007A00, 0xFF008A00, 0xFF009900, 0xFF1AA31A, 0xFF33AD33};
 color_t canyon_shades[] = {0xFF423B35, 0xFF534A42, 0xFF63594F, 0xFF73685C, 0xFF84766A};
+color_t mountain_shades[] = {0xFF333333, 0xFF444444, 0xFF555555, 0xFF6A6666, 0xFF667777};
 color_t glacier_shades[] = {0xFF63B9BB, 0xFF70D0D3, 0xFF7CE7EA, 0xFF89E9EC, 0xFFA3EEF0};
 
 static tile_style tstyle[8] = {
@@ -36,11 +37,14 @@ static void draw_tile(int x, int y, tile_data* tile)
     } else if (tile->terrain == flat || tile->terrain == hill) {
         int shade = (int)(tile->elevation / 0.1f) - 1;
         terminal_bkcolor(grass_shades[CLAMP_SHADE(shade)]);
+    } else if (tile->terrain == mountain) {
+        int shade = (int)(tile->elevation / 0.05f) - 1;
+        terminal_bkcolor(mountain_shades[CLAMP_SHADE(shade)]);
     } else if (tile->terrain == canyon) {
         int shade = (int)(tile->elevation / 0.02f) - 1;
         terminal_bkcolor(canyon_shades[CLAMP_SHADE(shade)]);
     } else if (tile->terrain == glacier) {
-        int shade = (int)((tile->elevation) / 0.05f) - 1;
+        int shade = (int)((tile->elevation) / 0.04f) - 1;
         terminal_bkcolor(glacier_shades[CLAMP_SHADE(shade)]);
     } else {
         terminal_bkcolor(ts->bkcolor);
