@@ -1,27 +1,39 @@
 #include "cccompat.h"
 
+#ifndef MAP_H
+#define MAP_H
+
 enum map_terrain {
-    lake  = 0,
-    river = 1,
-    ocean = 2,
-
-    flat = 3,
-    hill = 4,
+    no_terrain = -1,
+    water = 0,
+    flat = 1,
+    hill = 2,
+    canyon = 3,
+    glacier = 4,
     mountain = 5,
-    canyon = 6,
-    glacier = 7,
+    mountain_covered = 6,
+    mountain_med_seed = 7,
+    mountain_lg_seed = 8,
+};
 
+enum map_biome {
+    no_biome = -1,
+    deep_sea = 0,
+    shallow_sea = 1,
+    lake = 2,
+    marsh = 3,
+
+    desert = 4,
+    grassland = 5,
+    forest = 6,
+    jungle = 7,
+    taiga = 8,
+    tundra = 9,
 };
 
 typedef struct {
-    uint32_t x, y;
-    float longitude, latitude;
-    float dist2equator;
     enum map_terrain terrain;
-} map_tile;
-
-typedef struct {
-    enum map_terrain terrain;
+    enum map_biome biome;
     float elevation;
     float moisture;
 } tile_data;
@@ -50,7 +62,49 @@ typedef struct {
  */
 map *map_generate(map_config config);
 
+static tile_data map_no_tile = {no_terrain, no_biome, 0, 0};
+
 /*
  * Return the map tile at the given coordinate
  */
-map_tile map_get_tile(map *m, int x, int y);
+static inline tile_data* map_tile(map *m, int x, int y) {
+    if (y < 0 || y > m->config.height) {
+        return &map_no_tile;
+    }
+    x = (x + m->config.width) % m->config.width;
+    return m->tiles + y * m->config.width + x;
+}
+
+typedef struct {
+    tile_data *tl;
+    tile_data *tc;
+    tile_data *tr;
+    tile_data *cl;
+    tile_data *cc;
+    tile_data *cr;
+    tile_data *bl;
+    tile_data *bc;
+    tile_data *br;
+} tile_neighbors;
+
+static inline tile_neighbors map_tile_neighbors(map *m, int x, int y) {
+    tile_neighbors tn;
+    int width = m->config.width;
+    int left_adj = (x == 0) * width;
+    int right_adj = (x == width - 1) * width;
+
+    tn.cc = m->tiles + y*width + x;
+    tn.tc = tn.cc - width;
+    tn.bc = tn.cc + width;
+
+    tn.tl = tn.tc - 1 + left_adj;
+    tn.cl = tn.cc - 1 + left_adj;
+    tn.bl = tn.bc - 1 + left_adj;
+
+    tn.tr = tn.tc + 1 - right_adj;
+    tn.cr = tn.cc + 1 - right_adj;
+    tn.br = tn.bc + 1 - right_adj;
+
+    return tn;
+}
+#endif

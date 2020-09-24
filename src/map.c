@@ -19,9 +19,9 @@ static float fbm_noise2(noise_ptable perm, float x, float y,
 }
 
 map *map_generate(map_config config) {
-    float longitude, latitude, dist2equator, elevation, fault, erosion, rugged;
+    float longitude, latitude, dist2equator, elevation, fault, erosion, rugged, temp;
 
-    map *m = malloc(sizeof(map) + sizeof(map_tile) * config.width * config.height);
+    map *m = malloc(sizeof(map) + sizeof(tile_data) * config.width * config.height);
     if (m == NULL) {
         return NULL;
     }
@@ -38,6 +38,7 @@ map *map_generate(map_config config) {
     for (int x = 0; x < config.width; x++) {
         tile->moisture = 0;
         tile->terrain = glacier;
+        tile->biome = no_biome;
         tile++;
     }
 
@@ -60,9 +61,9 @@ map *map_generate(map_config config) {
             if (dist2equator * dist2equator + rugged > 0.85f || dist2equator - erosion > 0.88f) {
                 tile->terrain = glacier;
             } else if (elevation + fault - erosion*0.3f < config.ocean_level * 1.5f) {
-                tile->terrain = ocean;
-            } else if ((rugged > 0.09f && rugged < 0.13f) || rugged > 0.8f) {
-                tile -> terrain = mountain;
+                tile->terrain = water;
+            } else if ((rugged > 0.1f && rugged < 0.175f) || rugged > 0.5f) {
+                tile->terrain = mountain;
             } else if ((rugged > -0.02f && rugged <= 0.02f) || (rugged > 0.16f && rugged < 0.19f)) {
                 tile->terrain = hill;
             } else if (rugged <= 0 && rugged * rugged > 0.03f) {
@@ -71,7 +72,7 @@ map *map_generate(map_config config) {
                 tile->terrain = flat;
             }
 
-            if (tile->terrain == ocean || tile->terrain == lake) {
+            if (tile->terrain == water || tile->terrain == lake) {
                 if (moisture < 1.f) {
                     moisture += 0.1f;
                 }
@@ -94,24 +95,118 @@ map *map_generate(map_config config) {
     for (int x = 0; x < config.width; x++) {
         tile->moisture = 0;
         tile->terrain = glacier;
+        tile->biome = no_biome;
         tile++;
     }
 
-    return m;
-}
+    tile_neighbors nb;
+    tile_neighbors nb2;
 
-map_tile map_get_tile(map *m, int x, int y) {
-    x = (x + m->config.width) % m->config.width;
-    float widthf = (float)m->config.width;
-    float heightf = (float)m->config.height;
-    tile_data tdata = m->tiles[y * m->config.width + x];
-    return (map_tile){
-        .x = x,
-        .y = y,
-        .longitude = (float)x / widthf,
-        .latitude = (heightf - (float)y) / heightf,
-        .dist2equator = fabsf(heightf - (float)y * 2.0f) / heightf,
-        .terrain = tdata.terrain
-    };
+    // Define biomes
+    tile = m->tiles + config.width;
+
+    for (int y = 1; y < config.height - 1; y++) {
+        dist2equator = fabsf(heightf - (float)y * 2.0f) / heightf;
+        for (int x = 0; x < config.width; x++) {
+            temp = (1.0f - dist2equator) - tile->elevation;
+            switch (tile->terrain) {
+                case mountain:
+                    nb = map_tile_neighbors(m, x, y);
+                    int count = (
+                        (nb.cl->terrain == mountain) +
+                        (nb.tl->terrain == mountain) +
+                        (nb.tc->terrain == mountain) +
+                        (nb.tr->terrain == mountain) +
+                        (nb.cr->terrain == mountain) +
+                        (nb.br->terrain == mountain) +
+                        (nb.bc->terrain == mountain) +
+                        (nb.bl->terrain == mountain)
+                    );
+                    // Prune stray mountains
+                    if (count >= 4) {
+                        if (temp < 0.15f) {
+                            tile->biome = tundra;
+                        }
+                        break;
+                    }
+                    tile->terrain = hill;
+                case hill:
+                    if (temp < 0.02f) {
+                        tile->biome = tundra;
+                        break;
+                    }
+                    if (tile->moisture < 0.01f && temp > 0.7f) {
+                        tile->biome = desert;
+                        break;
+                    }
+                    if (tile->moisture > 0.7f && temp > 0.5f) {
+                        tile->biome = jungle;
+                        break;
+                    }
+                    if (tile->moisture > 0.6f) {
+                        tile->biome = (temp > 0.3f) ? forest : taiga;
+                        break;
+                    }
+                case flat:
+                    if (tile->moisture > 0.98f) {
+                        tile->biome = marsh;
+                        break;
+                    }
+                    if (temp < 0.f) {
+                        tile->biome = tundra;
+                        break;
+                    }
+                    tile->biome = grassland;
+                    break;
+                default:
+                    tile->biome = no_biome;
+            }
+            tile++;
+        }
+    }
+
+    // Place mountain seeds
+    for (int y = config.height-2; y > 1; y--) {
+        for (int x = config.width-1; x > 0; x--) {
+            nb = map_tile_neighbors(m, x, y);
+            if (nb.cc->terrain != mountain) continue;
+            // Avoid excessive overlap
+            if (nb.cr->terrain != mountain_lg_seed &&
+                nb.br->terrain != mountain_lg_seed &&
+                nb.bc->terrain < mountain_med_seed) {
+                if (nb.cl->terrain >= mountain &&
+                    nb.tl->terrain >= mountain &&
+                    nb.tc->terrain >= mountain) {
+                    int lx = x - 1 + (x == 0)*config.width;
+                    nb2 = map_tile_neighbors(m, lx, y - 1);
+                    if (nb2.bl->terrain >= mountain &&
+                        nb2.cl->terrain >= mountain &&
+                        nb2.tl->terrain >= mountain &&
+                        nb2.tc->terrain >= mountain &&
+                        nb2.tr->terrain >= mountain) {
+                        // We have room, place a big guy
+                        nb.cc->terrain = mountain_lg_seed;
+                        nb.cl->terrain = mountain_covered;
+                        nb.tl->terrain = mountain_covered;
+                        nb.tc->terrain = mountain_covered;
+                        nb2.bl->terrain = mountain_covered;
+                        nb2.cl->terrain = mountain_covered;
+                        nb2.tl->terrain = mountain_covered;
+                        nb2.tc->terrain = mountain_covered;
+                        nb2.tr->terrain = mountain_covered;
+                        continue;
+                    }
+                    // Place a med guy
+                    nb.cc->terrain = mountain_med_seed;
+                    nb.cl->terrain = mountain_covered;
+                    nb.tl->terrain = mountain_covered;
+                    nb.tc->terrain = mountain_covered;
+                    continue;
+                }
+            }
+        }
+    }
+
+    return m;
 }
 

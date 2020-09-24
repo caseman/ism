@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <inttypes.h>
 #include "map.h"
+#include "ini.h"
 
 const char *blackbkg = "[40m";
 const char *bluebkg = "[44m";
@@ -12,7 +13,7 @@ void print_tile(const char *color_code, const char *tile) {
     printf("%s%s", color_code, tile);
 }
 
-int main(int argc, char *argv[]) {
+int xmain(int argc, char *argv[]) {
     uint32_t seed = strtoumax(argv[1], NULL, 10);
     printf("Generating map with seed %d\n", seed);
 
@@ -35,7 +36,7 @@ int main(int argc, char *argv[]) {
     tile_data *tile = m->tiles;
     for (int y = 0; y < config.height; y++) {
         for (int x = 0; x < config.width; x++) {
-            if (tile->terrain == ocean) {
+            if (tile->terrain == water) {
                 print_tile(bluebkg, " ");
             } else if (tile->terrain == flat) {
                 print_tile(greenbkg, " ");
@@ -51,5 +52,20 @@ int main(int argc, char *argv[]) {
         print_tile(blackbkg, "\n");
     }
 
+    return 0;
+}
+
+static int handler(void* user, const char* section, const char* name,
+                   const char* value)
+{
+    printf("[%s] %s=%s\n", section, name, value);
+    return 0;
+}
+
+int main(int argc, char *argv[]) {
+    if (ini_parse(argv[1], handler, NULL) < 0) {
+        printf("Can't load '%s'\n", argv[1]);
+        return 1;
+    }
     return 0;
 }

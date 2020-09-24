@@ -5,19 +5,31 @@
 #include "ism.h"
 #include "mainview.h"
 
+static char *dirpath;
+
+static void tileset(char *codept, char *name, int sx, int sy) {
+    terminal_setf("%s: %s/../Resources/%s-%dx%d.png, size=%dx%d, resize=%dx%d,"
+                  "resize-filter=nearest, align=bottom-right;",
+        codept, dirpath, name, sx, sy, sx, sy, sx*2, sy*2
+    );
+}
+
 int main(int argc, char* argv[]) {
     char *path = strdup(argv[0]);
-    char *dirpath = dirname(path);
+    dirpath = dirname(path);
 
     terminal_open();
     terminal_setf(
-        "window: size=120x40, cellsize=10x20, resizeable=true, fullscreen=true, title='Ism %d.%d';"
-        "font: %s/../Resources/Hack-Regular.ttf, size=12;"
+        "window: size=120x80, cellsize=20x20, resizeable=true, fullscreen=true, title='Ism %d.%d';"
         "input: filter={keyboard}",
-        ISM_VERSION_MAJOR,
-        ISM_VERSION_MINOR,
-        dirpath
+        ISM_VERSION_MAJOR, ISM_VERSION_MINOR
     );
+    tileset("0xE0000", "Potash", 10, 10);
+    tileset("0xE0100", "tiles", 10, 10);
+    tileset("0xE0200", "mountain", 30, 30);
+    tileset("0xE0201", "mountain", 20, 20);
+    tileset("0xE0202", "mountain", 30, 20);
+
     terminal_clear();
 
     free(path);
@@ -40,7 +52,7 @@ int main(int argc, char* argv[]) {
 
     mainview view = {
         .width = 120,
-        .height = 40,
+        .height = 80,
         .map_scroll_x = 58,
         .map_scroll_y = 50,
         .game_map = map_generate(config),
