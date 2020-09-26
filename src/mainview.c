@@ -46,6 +46,7 @@ static void draw_tile(map* m, int tx, int ty, int vx, int vy, tile_data* tile)
     int chcode2 = 0x0020;
     int xoffset = 0;
     int yoffset = 0;
+    tile_neighbors nb = map_tile_neighbors(m, tx, ty);
 
     if (tile->terrain >= mountain) {
         shade = (int)(tile->elevation / 0.08f) - 1;
@@ -81,12 +82,13 @@ static void draw_tile(map* m, int tx, int ty, int vx, int vy, tile_data* tile)
             // no glyph needed
             break;
         case hill:
-            chcode1 = 0x25E0;
-            xoffset = 5;
-            yoffset = 3;
-            fgcolor = 0x99003300;
-            shade = (int)(tile->elevation / 0.05f) - 1;
-            bkcolor = mountain_shades[CLAMP_SHADE(shade)];
+            chcode1 = 0xE0107;
+            if (nb.cr->terrain == hill && tx % 2 == ty % 2) {
+                chcode1 = 0xE0108;
+            } else if (nb.cl->terrain == hill && tx % 2 != ty % 2) {
+                chcode1 = 0xE0109;
+            }
+            fgcolor = 0x55660000;
             break;
         case water:
             chcode1 = 0x2248;
@@ -133,7 +135,7 @@ static void draw_tile(map* m, int tx, int ty, int vx, int vy, tile_data* tile)
             bkcolor = desert_shades[CLAMP_SHADE(shade)];
             break;
         case grassland:
-            fgcolor = 0xFF00FF00;
+            // fgcolor = 0xFF00FF00;
             shade = (int)(tile->elevation / 0.1f) - 1;
             bkcolor = grass_shades[CLAMP_SHADE(shade)];
             break;
@@ -142,7 +144,7 @@ static void draw_tile(map* m, int tx, int ty, int vx, int vy, tile_data* tile)
     }
     terminal_bkcolor(bkcolor);
     terminal_color(fgcolor);
-    terminal_put_ext(vx, vy, xoffset, yoffset, 0x0020, NULL);
+    terminal_put_ext(vx, vy, xoffset, yoffset, chcode1, NULL);
     // terminal_put_ext(vx+1, vy, -xoffset, yoffset, chcode2, NULL);
 
     /*

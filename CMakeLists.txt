@@ -12,7 +12,7 @@ configure_file(src/ism.h.in include/ism.h)
 
 add_library(fastrng STATIC src/cccompat.h src/fastrng.h src/fastrng.c)
 add_library(perlin STATIC src/perlin.h src/perlin.c)
-#add_library(ini STATIC src/ini.h src/ini.c)
+add_library(ini STATIC src/ini.h src/ini.c)
 add_library(map STATIC src/map.h src/map.c)
 add_library(view STATIC src/mainview.h src/mainview.c)
 

@@ -64,7 +64,7 @@ map *map_generate(map_config config) {
                 tile->terrain = water;
             } else if ((rugged > 0.1f && rugged < 0.175f) || rugged > 0.5f) {
                 tile->terrain = mountain;
-            } else if ((rugged > -0.02f && rugged <= 0.02f) || (rugged > 0.16f && rugged < 0.19f)) {
+            } else if (rugged > -0.08f && rugged < -0.07f) {
                 tile->terrain = hill;
             } else if (rugged <= 0 && rugged * rugged > 0.03f) {
                 tile->terrain = canyon;
@@ -80,8 +80,9 @@ map *map_generate(map_config config) {
                 moisture *= 0.5f;
                 windward_tile->moisture += moisture;
             } else {
-                if (moisture > 0.f) {
-                    moisture -= 0.05f;
+                moisture -= 0.05f;
+                if (moisture < 0.f) {
+                    moisture = 0.f;
                 }
             }
             tile->moisture = moisture;
@@ -135,7 +136,7 @@ map *map_generate(map_config config) {
                         tile->biome = tundra;
                         break;
                     }
-                    if (tile->moisture < 0.01f && temp > 0.7f) {
+                    if (tile->moisture < 0.0f && temp > 0.7f) {
                         tile->biome = desert;
                         break;
                     }
@@ -154,6 +155,10 @@ map *map_generate(map_config config) {
                     }
                     if (temp < 0.f) {
                         tile->biome = tundra;
+                        break;
+                    }
+                    if (tile->moisture < 0.05f && temp > 0.7f) {
+                        tile->biome = desert;
                         break;
                     }
                     tile->biome = grassland;
