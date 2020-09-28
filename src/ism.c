@@ -40,14 +40,18 @@ int main(int argc, char* argv[]) {
         .height = 500,
 
         .ocean_level = 0,
+        .base_rainfall = 1.f,
+        .rainfall_factor = 2.f,
 
         .land_mass_scale = 3,
         .fault_scale = 10,
         .erosion_scale = 8,
+        .forest_scale = 40,
 
         .coast_complexity = 8,
         .fault_complexity = 8,
         .erosion_complexity = 12,
+        .forest_complexity = 3,
     };
 
     mainview view = {

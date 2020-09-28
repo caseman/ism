@@ -129,6 +129,12 @@ static void draw_tile(map* m, int tx, int ty, int vx, int vy, tile_data* tile)
         case jungle:
             bkcolor = 0xFF73A788;
             break;
+        case forest:
+            bkcolor = 0xFF004411;
+            break;
+        case taiga:
+            bkcolor = 0xFF005544;
+            break;
         case desert:
             fgcolor = 0x77220000;
             shade = (int)(tile->elevation / 0.05f) - 1;

@@ -18,10 +18,21 @@ static float fbm_noise2(noise_ptable perm, float x, float y,
     return val / max;
 }
 
-map *map_generate(map_config config) {
-    float longitude, latitude, dist2equator, elevation, fault, erosion, rugged, temp;
+#define num_prevailing_winds 6
+static int prevailing_winds[num_prevailing_winds][2] = {
+    {-1,-1}, {1, 1}, {-1,-1}, {-1,1}, {-1,-1}, {1,1}
+};
+static inline float rain_contribution(map *m, int x, int y) {
+    enum map_terrain t = map_tile(m, x, y)->terrain;
+    return (0.2f * (t == water) - 0.2f * (t == mountain) - 0.1f * (t == hill));
+}
 
-    map *m = malloc(sizeof(map) + sizeof(tile_data) * config.width * config.height);
+map *map_generate(map_config config) {
+    float longitude, latitude, dist2equator, elevation, fault, erosion, rugged, forestation, temp;
+    tile_data *tile;
+    tile_neighbors nb, nb2;
+
+    map *m = malloc(sizeof(map) + sizeof(tile_data) * config.width * (config.height + 2));
     if (m == NULL) {
         return NULL;
     }
@@ -30,19 +41,20 @@ map *map_generate(map_config config) {
     noise_ptable ptable = create_noise_ptable(rand_int32);
 
     float widthf = (float)config.width, heightf = (float)config.height;
+    m->tiles = m->tilestore + config.width;
     m->config = config;
-    tile_data* tile = m->tiles;
-    tile_data* windward_tile = m->tiles;
-    float moisture = 0;
 
+    // Initialize "off-map" tiles at top
+    tile = m->tilestore;
     for (int x = 0; x < config.width; x++) {
-        tile->moisture = 0;
-        tile->terrain = glacier;
+        tile->rainfall = 0.f;
+        tile->terrain = no_terrain;
         tile->biome = no_biome;
         tile++;
     }
 
-    for (int y = 1; y < config.height - 1; y++) {
+    // define terrain
+    for (int y = 0; y < config.height; y++) {
         latitude = (heightf - (float)y) / heightf;
         dist2equator = fabsf(heightf - (float)y * 2.0f) / heightf;
         for (int x = 0; x < config.width; x++) {
@@ -72,92 +84,116 @@ map *map_generate(map_config config) {
                 tile->terrain = flat;
             }
 
-            if (tile->terrain == water || tile->terrain == lake) {
-                if (moisture < 1.f) {
-                    moisture += 0.1f;
-                }
-            } else if (tile->terrain == mountain) {
-                moisture *= 0.5f;
-                windward_tile->moisture += moisture;
-            } else {
-                moisture -= 0.05f;
-                if (moisture < 0.f) {
-                    moisture = 0.f;
-                }
-            }
-            tile->moisture = moisture;
+            tile->rainfall = 0.f;
             tile->elevation = elevation + fault - erosion*0.3f;
             tile++;
-            windward_tile++;
-            moisture = (moisture + windward_tile->moisture) * 0.5f;
         }
     }
 
+    // Initialize "off-map" tiles at bottom
     for (int x = 0; x < config.width; x++) {
-        tile->moisture = 0;
-        tile->terrain = glacier;
+        tile->rainfall = 0.f;
+        tile->terrain = no_terrain;
         tile->biome = no_biome;
         tile++;
     }
 
-    tile_neighbors nb;
-    tile_neighbors nb2;
+    // Consolidate mountains
+    tile = m->tiles;
+    for (int y = 0; y < config.height; y++) {
+        for (int x = 0; x < config.width; x++) {
+            if (tile->terrain == mountain) {
+                nb = map_tile_neighbors(m, x, y);
+                int count = (
+                    (nb.cl->terrain == mountain) +
+                    (nb.tl->terrain == mountain) +
+                    (nb.tc->terrain == mountain) +
+                    (nb.tr->terrain == mountain) +
+                    (nb.cr->terrain == mountain) +
+                    (nb.br->terrain == mountain) +
+                    (nb.bc->terrain == mountain) +
+                    (nb.bl->terrain == mountain)
+                );
+                // Prune stray mountains
+                if (count < 4) {
+                    tile->terrain = hill;
+                }
+            }
+            tile++;
+        }
+    }
+
+    // Model rainfall
+    tile = m->tiles;
+    int cone_size = config.width / 20;
+    int band_height = config.height / num_prevailing_winds;
+    for (int band = 0; band < num_prevailing_winds; band++) {
+        int wx = prevailing_winds[band][0];
+        int wy = prevailing_winds[band][1];
+        int cone_width = wx * cone_size;
+        int cone_height = wy * cone_size;
+        for (int y = band * band_height; y < (band + 1) * band_height; y++) {
+            for (int x = 0; x < config.width; x++) {
+                float rainfall = config.base_rainfall;
+                for (int dx = 0; dx != cone_width; dx += wx) {
+                    for (int dy = (dx == 0)*wy; dy != cone_height; dy += wy) {
+                        float dist2 = dx*dx + dy*dy;
+                        rainfall += rain_contribution(m, x+dx, y+dy) * config.rainfall_factor / dist2;
+                        float downwind = rain_contribution(m, x-dx, y-dx) * config.rainfall_factor / dist2;
+                        if (downwind < 0.f) {
+                            // downwind mountains enhance rainfall
+                            rainfall -= downwind;
+                        }
+                    }
+                }
+                tile->rainfall = rainfall;
+                tile++;
+            }
+        }
+    }
 
     // Define biomes
-    tile = m->tiles + config.width;
-
-    for (int y = 1; y < config.height - 1; y++) {
+    tile = m->tiles;
+    for (int y = 0; y < config.height; y++) {
         dist2equator = fabsf(heightf - (float)y * 2.0f) / heightf;
+        latitude = (heightf - (float)y) / heightf;
         for (int x = 0; x < config.width; x++) {
+            longitude = (float)x / widthf;
+            forestation = fabsf(fbm_noise2(ptable, longitude, latitude,
+                config.forest_scale, config.forest_complexity, 0.5f));
             temp = (1.0f - dist2equator) - tile->elevation;
+
             switch (tile->terrain) {
                 case mountain:
-                    nb = map_tile_neighbors(m, x, y);
-                    int count = (
-                        (nb.cl->terrain == mountain) +
-                        (nb.tl->terrain == mountain) +
-                        (nb.tc->terrain == mountain) +
-                        (nb.tr->terrain == mountain) +
-                        (nb.cr->terrain == mountain) +
-                        (nb.br->terrain == mountain) +
-                        (nb.bc->terrain == mountain) +
-                        (nb.bl->terrain == mountain)
-                    );
-                    // Prune stray mountains
-                    if (count >= 4) {
-                        if (temp < 0.15f) {
-                            tile->biome = tundra;
-                        }
-                        break;
-                    }
-                    tile->terrain = hill;
-                case hill:
-                    if (temp < 0.02f) {
+                    if (temp < 0.15f) {
                         tile->biome = tundra;
-                        break;
                     }
-                    if (tile->moisture < 0.0f && temp > 0.7f) {
+                    break;
+                case hill:
+                case flat:
+                    if (temp > 0.15f && tile->rainfall < temp) {
                         tile->biome = desert;
                         break;
                     }
-                    if (tile->moisture > 0.7f && temp > 0.5f) {
-                        tile->biome = jungle;
-                        break;
-                    }
-                    if (tile->moisture > 0.6f) {
-                        tile->biome = (temp > 0.3f) ? forest : taiga;
-                        break;
-                    }
-                case flat:
-                    if (tile->moisture > 0.98f) {
+                    if (tile->rainfall > 2.5f && forestation > 0.1f) {
                         tile->biome = marsh;
                         break;
                     }
-                    if (temp < 0.f) {
+                    if (forestation > 0.125f || tile->rainfall > 1.75f) {
+                        if (tile->rainfall > 1.25f && temp > 0.5f) {
+                            tile->biome = jungle;
+                            break;
+                        }
+                        if (tile->rainfall > 1.f) {
+                            tile->biome = (temp > 0.3f) ? forest : taiga;
+                            break;
+                        }
+                    }
+                    if (temp < 0.15f) {
                         tile->biome = tundra;
                         break;
                     }
-                    if (tile->moisture < 0.05f && temp > 0.7f) {
+                    if (tile->rainfall < forestation) {
                         tile->biome = desert;
                         break;
                     }

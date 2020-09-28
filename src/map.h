@@ -35,7 +35,7 @@ typedef struct {
     enum map_terrain terrain;
     enum map_biome biome;
     float elevation;
-    float moisture;
+    float rainfall;
 } tile_data;
 
 typedef struct {
@@ -45,16 +45,21 @@ typedef struct {
     float land_mass_scale;
     float fault_scale;
     float erosion_scale;
+    float forest_scale;
     int coast_complexity;
     int fault_complexity;
     int erosion_complexity;
+    int forest_complexity;
 
     float ocean_level;
+    float base_rainfall;
+    float rainfall_factor;
 } map_config;
 
 typedef struct {
     map_config config;
-    tile_data tiles[0];
+    tile_data *tiles;
+    tile_data tilestore[0];
 } map;
 
 /*
