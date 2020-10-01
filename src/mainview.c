@@ -14,7 +14,7 @@ color_t grass_shades[] = {0xFF007A00, 0xFF008A00, 0xFF009900, 0xFF1AA31A, 0xFF33
 color_t forest_shades[] = {0xFF006B00, 0xFF007A00, 0xFF008A00, 0xFF009900, 0xFF1AA31A};
 color_t taiga_shades[] = {0xFF6b775f, 0xFF7a886d, 0xFFcfc9c9, 0xFFe7e4e4, 0xFFffffff};
 color_t canyon_shades[] = {0xFF423B35, 0xFF534A42, 0xFF63594F, 0xFF73685C, 0xFF84766A};
-color_t jungle_shades[] = {0xFF5c866d, 0xFF68967a, 0xFF73a788, 0xFF81b094, 0xFF8fb9a0};
+color_t jungle_shades[] = {0xFF296e36, 0xFF2e7c3d, 0xFF338a44, 0xFF479657, 0xFF5ca169};
 color_t mountain_shades[] = {0xFF666666, 0xFF888888, 0xFFAAAAAA, 0xFFCCCCCC, 0xFFF0F0F0};
 color_t glacier_shades[] = {0xFF63B9BB, 0xFF70D0D3, 0xFF7CE7EA, 0xFF89E9EC, 0xFFA3EEF0};
 color_t desert_shades[] = {0xFF9B8B46, 0xFFB29E50, 0xFFC8B25A, 0xFFDEC664, 0xFFE1CC74};
@@ -138,10 +138,10 @@ static void draw_tile(map* m, int tx, int ty, int vx, int vy, tile_data* tile)
             xoffset = (ty % 2) * 4;
             yoffset = (tx % 3) * 3;
             bkcolor = 0xFF5c866d;
-            fgcolor = 0xFF223229;
-            terminal_color(0x22FFFFFF);
+            fgcolor = 0xFF14371b;
+            terminal_color(0x3FFFFFFF);
             tputx(vx, vy, xoffset, yoffset-2, chcode1);
-            shade = (int)(tile->elevation / 0.04f) - 1;
+            shade = (int)(tile->elevation / 0.05f) - 1;
             bkcolor = jungle_shades[CLAMP_SHADE(shade)];
             break;
         case desert:
