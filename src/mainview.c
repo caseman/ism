@@ -51,39 +51,7 @@ static void draw_tile(map* m, int tx, int ty, int vx, int vy, tile_data* tile)
     int yoffset = 0;
     tile_neighbors nb = map_tile_neighbors(m, tx, ty);
 
-    if (tile->terrain >= mountain) {
-        shade = (int)(tile->elevation / 0.08f) - 1;
-        fgcolor = mountain_shades[CLAMP_SHADE(shade)];
-        bkcolor = 0xFFA0A0A0;
-        terminal_bkcolor(bkcolor);
-    }
-
     switch (tile->terrain) {
-        case mountain_lg_seed:
-            terminal_color(0xFF444444);
-            yoffset = (tx % 3) * 5;
-            tputx(vx, vy, 0, yoffset-5, 0xE0200);
-            terminal_color(fgcolor);
-            tputx(vx, vy, 0, yoffset, 0xE0200);
-            return;
-        case mountain_med_seed:
-            terminal_color(0xFF444444);
-            yoffset = (tx % 3) * 10;
-            tputx(vx, vy, 0, yoffset-5, 0xE0201);
-            terminal_color(fgcolor);
-            tputx(vx, vy, 0, yoffset, 0xE0201);
-            return;
-        case mountain:
-            terminal_color(0xFF444444);
-            yoffset = (tx % 2) * 5;
-            xoffset = (ty % 2) * 5;
-            tputx(vx, vy, xoffset, yoffset-5, 0xE0106);
-            terminal_color(fgcolor);
-            tputx(vx, vy, xoffset, yoffset, 0xE0106);
-            return;
-        case mountain_covered:
-            // no glyph needed
-            break;
         case hill:
             chcode1 = 0xE0107;
             if (nb.cr->terrain == hill && tx % 2 == ty % 2) {
@@ -221,7 +189,46 @@ static void draw_tile(map* m, int tx, int ty, int vx, int vy, tile_data* tile)
         default:
             break;
     }
-*/
+    */
+
+    // Draw mountain glyphs on top
+    if (tile->terrain >= mountain) {
+        shade = (int)(tile->elevation / 0.08f) - 1;
+        fgcolor = mountain_shades[CLAMP_SHADE(shade)];
+
+        switch (tile->terrain) {
+            case mountain_lg_seed:
+                terminal_color(0xFF444444);
+                yoffset = (tx % 3) * 5;
+                tputx(vx, vy, 0, yoffset-5, 0xE0200);
+                terminal_color(0x55000000);
+                tputx(vx, vy, xoffset, yoffset-10, 0xE00DB);
+                terminal_color(fgcolor);
+                tputx(vx, vy, 0, yoffset, 0xE0200);
+                break;
+            case mountain_med_seed:
+                terminal_color(0xFF444444);
+                yoffset = (tx % 3) * 10;
+                tputx(vx, vy, 0, yoffset-5, 0xE0201);
+                terminal_color(0x55000000);
+                tputx(vx, vy, xoffset, yoffset-2, 0xE00DB);
+                terminal_color(fgcolor);
+                tputx(vx, vy, 0, yoffset, 0xE0201);
+                break;
+            case mountain:
+                terminal_color(0xFF444444);
+                yoffset = (tx % 2) * 5;
+                xoffset = (ty % 2) * 5;
+                tputx(vx, vy, xoffset, yoffset-5, 0xE0106);
+                terminal_color(0x55000000);
+                tputx(vx, vy, xoffset+2, yoffset-4, 0xE00DC);
+                terminal_color(fgcolor);
+                tputx(vx, vy, xoffset, yoffset, 0xE0106);
+                break;
+            default:
+                break;
+        }
+    }
 }
 
 void mainview_draw(mainview* view)

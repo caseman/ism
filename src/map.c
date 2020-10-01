@@ -165,10 +165,6 @@ map *map_generate(map_config config) {
 
             switch (tile->terrain) {
                 case mountain:
-                    if (temp < 0.15f) {
-                        tile->biome = tundra;
-                    }
-                    break;
                 case hill:
                 case flat:
                     if (temp > 0.15f && tile->rainfall < temp) {
