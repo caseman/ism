@@ -15,6 +15,7 @@ color_t forest_shades[] = {0xFF006B00, 0xFF007A00, 0xFF008A00, 0xFF009900, 0xFF1
 color_t taiga_shades[] = {0xFF6b775f, 0xFF7a886d, 0xFFcfc9c9, 0xFFe7e4e4, 0xFFffffff};
 color_t canyon_shades[] = {0xFF423B35, 0xFF534A42, 0xFF63594F, 0xFF73685C, 0xFF84766A};
 color_t jungle_shades[] = {0xFF296e36, 0xFF2e7c3d, 0xFF338a44, 0xFF479657, 0xFF5ca169};
+color_t marsh_shades[] = {0xFF63527e,  0xFF63527e, 0xFF523f70, 0xFF4a3965, 0xFF42325a};
 color_t mountain_shades[] = {0xFF666666, 0xFF888888, 0xFFAAAAAA, 0xFFCCCCCC, 0xFFF0F0F0};
 color_t glacier_shades[] = {0xFF63B9BB, 0xFF70D0D3, 0xFF7CE7EA, 0xFF89E9EC, 0xFFA3EEF0};
 color_t desert_shades[] = {0xFF9B8B46, 0xFFB29E50, 0xFFC8B25A, 0xFFDEC664, 0xFFE1CC74};
@@ -95,7 +96,19 @@ static void draw_tile(map* m, int tx, int ty, int vx, int vy, tile_data* tile)
             fgcolor = 0xFFAAAAAA;
             break;
         case marsh:
-            bkcolor = 0xFF990099;
+            if ((tx + ty) % 3 == 0) {
+                chcode1 = 0xE0117;
+            } else {
+                chcode1 = 0xE0116;
+            }
+            xoffset = (ty % 2) * 2 - 1;
+            yoffset = (tx % 3);
+            bkcolor = 0xFF523f70;
+            fgcolor = 0xFF39231c;
+            terminal_color(0x3FFFFFFF);
+            tputx(vx, vy, xoffset, yoffset-2, chcode1);
+            shade = (int)(tile->elevation / 0.015f);
+            bkcolor = marsh_shades[CLAMP_SHADE(shade)];
             break;
         case jungle:
             if ((tx + ty) % 3 == 0) {
