@@ -1,4 +1,5 @@
 #include <math.h>
+#include <float.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include "fastrng.h"
@@ -25,6 +26,34 @@ static int prevailing_winds[num_prevailing_winds][2] = {
 static inline float rain_contribution(map *m, int x, int y) {
     enum map_terrain t = map_tile(m, x, y)->terrain;
     return (0.2f * (t == water) - 0.2f * (t == mountain) - 0.1f * (t == hill));
+}
+
+static void flow_river(map *m, int x, int y) {
+    tile_data *tile = map_tile(m, x, y);
+    tile_data *lowest;
+    static int river_id = 0;
+    river_id += 1;
+    int nx, ny;
+    while (tile->terrain > water && tile->biome != river) {
+        tile_neighbors nb = map_tile_neighbors(m, x, y);
+        tile->biome = river;
+        tile->river_id = river_id;
+        float lowest_elevation = FLT_MAX;
+        for (int i = 0; i < 9; i++) {
+            if (i == 0 || i == 2 || i == 4 || i == 6 || i == 9) {
+                continue;
+            }
+            if (nb.tile[i]->elevation <= lowest_elevation && nb.tile[i]->river_id != river_id) {
+                lowest = nb.tile[i];
+                lowest_elevation = lowest->elevation;
+                nx = x + (i == 2 || i == 5 || i == 8) - (i == 0 || i == 3 || i == 6);
+                ny = y + (i > 5) - (i < 3);
+            }
+        }
+        tile = lowest;
+        x = nx;
+        y = ny;
+    } 
 }
 
 map *map_generate(map_config config) {
@@ -58,6 +87,7 @@ map *map_generate(map_config config) {
         latitude = (heightf - (float)y) / heightf;
         dist2equator = fabsf(heightf - (float)y * 2.0f) / heightf;
         for (int x = 0; x < config.width; x++) {
+            tile->biome = no_biome;
             longitude = (float)x / widthf;
 
             elevation = fbm_noise2(ptable, longitude, latitude,
@@ -158,6 +188,10 @@ map *map_generate(map_config config) {
         dist2equator = fabsf(heightf - (float)y * 2.0f) / heightf;
         latitude = (heightf - (float)y) / heightf;
         for (int x = 0; x < config.width; x++) {
+            if (tile->biome != no_biome) {
+                tile++;
+                continue;
+            }
             longitude = (float)x / widthf;
             forestation = fabsf(fbm_noise2(ptable, longitude, latitude,
                 config.forest_scale, config.forest_complexity, 0.5f));
@@ -165,6 +199,10 @@ map *map_generate(map_config config) {
 
             switch (tile->terrain) {
                 case mountain:
+                    if (tile->elevation > 0.2 && (tile->rainfall + 0.08f) >= rand_uni() * 20.0f) {
+                        flow_river(m, x, y);
+                        break;
+                    }
                 case hill:
                 case flat:
                     if (temp > 0.15f && tile->rainfall < temp) {

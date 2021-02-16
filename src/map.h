@@ -21,21 +21,25 @@ enum map_biome {
     deep_sea = 0,
     shallow_sea = 1,
     lake = 2,
-    marsh = 3,
+    river = 3,
+    marsh = 4,
 
-    desert = 4,
-    grassland = 5,
-    forest = 6,
-    jungle = 7,
-    taiga = 8,
-    tundra = 9,
+    desert = 5,
+    grassland = 6,
+    forest = 7,
+    jungle = 8,
+    taiga = 9,
+    tundra = 10,
 };
 
 typedef struct {
     enum map_terrain terrain;
     enum map_biome biome;
     float elevation;
-    float rainfall;
+    union {
+        float rainfall;
+        int river_id;
+    };
 } tile_data;
 
 typedef struct {
@@ -81,15 +85,20 @@ static inline tile_data* map_tile(map *m, int x, int y) {
 }
 
 typedef struct {
-    tile_data *tl;
-    tile_data *tc;
-    tile_data *tr;
-    tile_data *cl;
-    tile_data *cc;
-    tile_data *cr;
-    tile_data *bl;
-    tile_data *bc;
-    tile_data *br;
+    union {
+        struct {
+            tile_data *tl;
+            tile_data *tc;
+            tile_data *tr;
+            tile_data *cl;
+            tile_data *cc;
+            tile_data *cr;
+            tile_data *bl;
+            tile_data *bc;
+            tile_data *br;
+        };
+        tile_data *tile[9];
+    };
 } tile_neighbors;
 
 static inline tile_neighbors map_tile_neighbors(map *m, int x, int y) {

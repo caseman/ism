@@ -95,6 +95,10 @@ static void draw_tile(map* m, int tx, int ty, int vx, int vy, tile_data* tile)
             bkcolor = 0xFFFFFFFF;
             fgcolor = 0xFFAAAAAA;
             break;
+        case river:
+            bkcolor = 0xFF0000FF;
+            fgcolor = 0xFF0000FF;
+            break;
         case marsh:
             if ((tx + ty) % 3 == 0) {
                 chcode1 = 0xE0117;
