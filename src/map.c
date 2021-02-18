@@ -43,12 +43,14 @@ static void flow_river(map *m, int x, int y) {
             if (i == 0 || i == 2 || i == 4 || i == 6 || i == 9) {
                 continue;
             }
-            if (nb.tile[i]->elevation <= lowest_elevation && nb.tile[i]->river_id != river_id) {
+            float elevation = nb.tile[i]->elevation + (nb.tile[i]->river_id == river_id) * 0.06f;
+            if (elevation <= lowest_elevation) {
                 lowest = nb.tile[i];
-                lowest_elevation = lowest->elevation;
+                lowest_elevation = elevation;
                 nx = x + (i == 2 || i == 5 || i == 8) - (i == 0 || i == 3 || i == 6);
                 ny = y + (i > 5) - (i < 3);
             }
+            nb.tile[i]->river_id = river_id;
         }
         tile = lowest;
         x = nx;
@@ -199,7 +201,7 @@ map *map_generate(map_config config) {
 
             switch (tile->terrain) {
                 case mountain:
-                    if (tile->elevation > 0.2 && (tile->rainfall + 0.08f) >= rand_uni() * 20.0f) {
+                    if (0.035f >= rand_uni()) {
                         flow_river(m, x, y);
                         break;
                     }

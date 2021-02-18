@@ -36,10 +36,8 @@ typedef struct {
     enum map_terrain terrain;
     enum map_biome biome;
     float elevation;
-    union {
-        float rainfall;
-        int river_id;
-    };
+    float rainfall;
+    int river_id;
 } tile_data;
 
 typedef struct {
