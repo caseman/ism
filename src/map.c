@@ -28,31 +28,32 @@ static inline float rain_contribution(map *m, int x, int y) {
     return (0.2f * (t == water) - 0.2f * (t == mountain) - 0.1f * (t == hill));
 }
 
-static void flow_river(map *m, int x, int y) {
+static void flow_river(map *m, int x, int y, float dir) {
     tile_data *tile = map_tile(m, x, y);
-    tile_data *lowest;
+    tile_data *min;
     static int river_id = 0;
     river_id += 1;
     int nx, ny;
-    while (tile->terrain > water && tile->biome != river) {
+    while (tile->terrain != water && tile->terrain != glacier && tile->biome != river) {
         tile_neighbors nb = map_tile_neighbors(m, x, y);
         tile->biome = river;
         tile->river_id = river_id;
-        float lowest_elevation = FLT_MAX;
+        float min_elevation = FLT_MAX * -dir;
+        min = tile;
         for (int i = 0; i < 9; i++) {
             if (i == 0 || i == 2 || i == 4 || i == 6 || i == 9) {
                 continue;
             }
-            float elevation = nb.tile[i]->elevation + (nb.tile[i]->river_id == river_id) * 0.06f;
-            if (elevation <= lowest_elevation) {
-                lowest = nb.tile[i];
-                lowest_elevation = elevation;
+            float elevation = nb.tile[i]->elevation + (nb.tile[i]->river_id == river_id) * 0.035f * -dir;
+            if (elevation * -dir + min_elevation * dir <= 0) {
+                min = nb.tile[i];
+                min_elevation = elevation;
                 nx = x + (i == 2 || i == 5 || i == 8) - (i == 0 || i == 3 || i == 6);
                 ny = y + (i > 5) - (i < 3);
             }
             nb.tile[i]->river_id = river_id;
         }
-        tile = lowest;
+        tile = min;
         x = nx;
         y = ny;
     } 
@@ -201,8 +202,8 @@ map *map_generate(map_config config) {
 
             switch (tile->terrain) {
                 case mountain:
-                    if (0.035f >= rand_uni()) {
-                        flow_river(m, x, y);
+                    if (0.025f >= rand_uni()) {
+                        flow_river(m, x, y, -1.0f);
                         break;
                     }
                 case hill:
@@ -210,6 +211,16 @@ map *map_generate(map_config config) {
                     if (temp > 0.15f && tile->rainfall < temp) {
                         tile->biome = desert;
                         break;
+                    }
+                    if ((tile->terrain == flat || tile->terrain == canyon) && 0.025f >= rand_uni()) {
+                        tile_neighbors nb = map_tile_neighbors(m, x, y);
+                        for (int i = 0; i < 9; i++) {
+                            if (nb.tile[i]->terrain == water) {
+                                flow_river(m, x, y, 1.0f);
+                                break;
+                            }
+                        }
+                        if (tile->biome == river) break;
                     }
                     if (tile->rainfall > 2.5f && forestation > 0.1f) {
                         tile->biome = marsh;
