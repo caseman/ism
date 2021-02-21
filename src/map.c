@@ -28,6 +28,28 @@ static inline float rain_contribution(map *m, int x, int y) {
     return (0.2f * (t == water) - 0.2f * (t == mountain) - 0.1f * (t == hill));
 }
 
+static void fill_lake(map *m, int x, int y) {
+    tile_data *tile = map_tile(m, x, y);
+    static int fill_dirs[6] = {1, 5, 7, 7, 3, 3};
+    int size = roundf(fabsf(rand_norm(8.0f, 50.0f))) + 8;
+    int dir = rand_int32() % 6;
+    for (int s = 0; s < size && tile->terrain != water; s++) {
+        tile->terrain = water;
+        tile->biome = lake;
+
+        int last_dir = dir;
+        do {
+            tile_neighbors nb = map_tile_neighbors(m, x, y);
+            int r = (int)roundf(rand_norm(0.0f, 2.0f));
+            dir = (dir + (r && 1)) % 6;
+            int i = fill_dirs[dir];
+            tile = nb.tile[i];
+            x += (i == 2 || i == 5 || i == 8) - (i == 0 || i == 3 || i == 6);
+            y += (i > 5) - (i < 3);
+        } while (tile->terrain == water && dir != last_dir);
+    }
+}
+
 static void flow_river(map *m, int x, int y, float dir) {
     tile_data *tile = map_tile(m, x, y);
     tile_data *min;
@@ -51,12 +73,20 @@ static void flow_river(map *m, int x, int y, float dir) {
                 nx = x + (i == 2 || i == 5 || i == 8) - (i == 0 || i == 3 || i == 6);
                 ny = y + (i > 5) - (i < 3);
             }
-            nb.tile[i]->river_id = river_id;
+            if (nb.tile[i]->river_id == 0) {
+                nb.tile[i]->river_id = river_id;
+            } else if (nb.tile[i]->river_id != river_id && nb.tile[i]->biome == river && min->biome != river) {
+                min = nb.tile[i];
+                break;
+            }
         }
         tile = min;
         x = nx;
         y = ny;
-    } 
+    }
+    if (tile->biome == river && tile->river_id == river_id) {
+        fill_lake(m, x, y);
+    }
 }
 
 map *map_generate(map_config config) {
@@ -82,6 +112,7 @@ map *map_generate(map_config config) {
         tile->rainfall = 0.f;
         tile->terrain = no_terrain;
         tile->biome = no_biome;
+        tile->river_id = 0;
         tile++;
     }
 
@@ -91,6 +122,7 @@ map *map_generate(map_config config) {
         dist2equator = fabsf(heightf - (float)y * 2.0f) / heightf;
         for (int x = 0; x < config.width; x++) {
             tile->biome = no_biome;
+            tile->river_id = 0;
             longitude = (float)x / widthf;
 
             elevation = fbm_noise2(ptable, longitude, latitude,
@@ -128,6 +160,7 @@ map *map_generate(map_config config) {
         tile->rainfall = 0.f;
         tile->terrain = no_terrain;
         tile->biome = no_biome;
+        tile->river_id = 0;
         tile++;
     }
 
