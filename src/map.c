@@ -30,12 +30,13 @@ static inline float rain_contribution(map *m, int x, int y) {
 
 static void fill_lake(map *m, int x, int y) {
     tile_data *tile = map_tile(m, x, y);
-    static int fill_dirs[6] = {1, 5, 7, 7, 3, 3};
+    static int fill_dirs[6] = {1, 5, 7, 6, 3, 2};
     int size = roundf(fabsf(rand_norm(8.0f, 50.0f))) + 8;
     int dir = rand_int32() % 6;
     for (int s = 0; s < size && tile->terrain != water; s++) {
         tile->terrain = water;
         tile->biome = lake;
+        tile->river_id = 0;
 
         int last_dir = dir;
         do {
@@ -44,47 +45,45 @@ static void fill_lake(map *m, int x, int y) {
             dir = (dir + (r && 1)) % 6;
             int i = fill_dirs[dir];
             tile = nb.tile[i];
-            x += (i == 2 || i == 5 || i == 8) - (i == 0 || i == 3 || i == 6);
-            y += (i > 5) - (i < 3);
-        } while (tile->terrain == water && dir != last_dir);
+            tile_xy(m, tile, &x, &y);
+        } while (tile->terrain == water && !tile->river_id && dir != last_dir);
     }
 }
 
+int *river_scratch = NULL;
+
 static void flow_river(map *m, int x, int y, float dir) {
+    int flow_direction[4] = {1, 3, 5, 7};
     tile_data *tile = map_tile(m, x, y);
     tile_data *min;
     static int river_id = 0;
     river_id += 1;
-    int nx, ny;
-    while (tile->terrain != water && tile->terrain != glacier && tile->biome != river) {
-        tile_neighbors nb = map_tile_neighbors(m, x, y);
-        tile->biome = river;
-        tile->river_id = river_id;
+    while (tile->terrain != water && tile->terrain != glacier && !tile->river_id) {
         float min_elevation = FLT_MAX * -dir;
+        tile_neighbors nb = map_tile_neighbors(m, x, y);
+        tile->river_id = river_id;
         min = tile;
-        for (int i = 0; i < 9; i++) {
-            if (i == 0 || i == 2 || i == 4 || i == 6 || i == 9) {
-                continue;
-            }
-            float elevation = nb.tile[i]->elevation + (nb.tile[i]->river_id == river_id) * 0.035f * -dir;
-            if (elevation * -dir + min_elevation * dir <= 0) {
-                min = nb.tile[i];
-                min_elevation = elevation;
-                nx = x + (i == 2 || i == 5 || i == 8) - (i == 0 || i == 3 || i == 6);
-                ny = y + (i > 5) - (i < 3);
-            }
-            if (nb.tile[i]->river_id == 0) {
-                nb.tile[i]->river_id = river_id;
-            } else if (nb.tile[i]->river_id != river_id && nb.tile[i]->biome == river && min->biome != river) {
-                min = nb.tile[i];
+        for (int i = 0; i < 4; i++) {
+            tile_data *nt = nb.tile[flow_direction[i]];
+            if (nt->river_id && nt->river_id != river_id) {
+                // join existing river
+                min = nt;
                 break;
+            }
+            int to = tile_offset(m, nt);
+            float elevation = nt->elevation + (river_scratch[to] == river_id) * 0.035f * -dir;
+            if (elevation * dir >= min_elevation * dir) {
+                min = nt;
+                min_elevation = elevation;
+            }
+            if (!river_scratch[to]) {
+                river_scratch[to] = river_id;
             }
         }
         tile = min;
-        x = nx;
-        y = ny;
+        tile_xy(m, min, &x, &y);
     }
-    if (tile->biome == river && tile->river_id == river_id) {
+    if (tile->river_id == river_id) {
         fill_lake(m, x, y);
     }
 }
@@ -94,8 +93,14 @@ map *map_generate(map_config config) {
     tile_data *tile;
     tile_neighbors nb, nb2;
 
+    river_scratch = calloc(sizeof(*river_scratch), config.width * config.height);
+    if (river_scratch == NULL) {
+        return NULL;
+    }
+
     map *m = malloc(sizeof(map) + sizeof(tile_data) * config.width * (config.height + 2));
     if (m == NULL) {
+        free(river_scratch);
         return NULL;
     }
 
@@ -237,7 +242,6 @@ map *map_generate(map_config config) {
                 case mountain:
                     if (0.025f >= rand_uni()) {
                         flow_river(m, x, y, -1.0f);
-                        break;
                     }
                 case hill:
                 case flat:
@@ -253,7 +257,6 @@ map *map_generate(map_config config) {
                                 break;
                             }
                         }
-                        if (tile->biome == river) break;
                     }
                     if (tile->rainfall > 2.5f && forestation > 0.1f) {
                         tile->biome = marsh;
@@ -328,6 +331,7 @@ map *map_generate(map_config config) {
         }
     }
 
+    free(river_scratch);
     return m;
 }
 

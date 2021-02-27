@@ -21,15 +21,14 @@ enum map_biome {
     deep_sea = 0,
     shallow_sea = 1,
     lake = 2,
-    river = 3,
-    marsh = 4,
+    marsh = 5,
 
-    desert = 5,
-    grassland = 6,
-    forest = 7,
-    jungle = 8,
-    taiga = 9,
-    tundra = 10,
+    desert = 6,
+    grassland = 7,
+    forest = 8,
+    jungle = 9,
+    taiga = 10,
+    tundra = 11,
 };
 
 typedef struct {
@@ -118,5 +117,15 @@ static inline tile_neighbors map_tile_neighbors(map *m, int x, int y) {
     tn.br = tn.bc + 1 - right_adj;
 
     return tn;
+}
+
+static inline int tile_offset(map *m, tile_data *t) {
+    return t - m->tiles;
+}
+
+static inline void tile_xy(map *m, tile_data *t, int *x, int *y) {
+    int offset = t - m->tiles;
+    *y = offset / m->config.width;
+    *x = offset % m->config.width;
 }
 #endif

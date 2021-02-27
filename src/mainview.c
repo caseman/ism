@@ -95,10 +95,6 @@ static void draw_tile(map* m, int tx, int ty, int vx, int vy, tile_data* tile)
             bkcolor = 0xFFFFFFFF;
             fgcolor = 0xFFAAAAAA;
             break;
-        case river:
-            bkcolor = 0xFF0000FF;
-            fgcolor = 0xFF0000FF;
-            break;
         case marsh:
             if ((tx + ty) % 3 == 0) {
                 chcode1 = 0xE0117;
@@ -171,6 +167,24 @@ static void draw_tile(map* m, int tx, int ty, int vx, int vy, tile_data* tile)
             break;
     }
     terminal_bkcolor(bkcolor);
+
+    if (tile->river_id) {
+        terminal_color(0xFF0000FF);
+
+        if (nb.tc->river_id || nb.tc->terrain == water) {
+            terminal_put_ext(vx, vy, 0, 0, 0xE0120, NULL);
+        }
+        if (nb.bc->river_id || nb.bc->terrain == water) {
+            terminal_put_ext(vx, vy, 0, 0, 0xE0121, NULL);
+        }
+        if (nb.cl->river_id || nb.cl->terrain == water) {
+            terminal_put_ext(vx, vy, 0, 0, 0xE0122, NULL);
+        }
+        if (nb.cr->river_id || nb.cr->terrain == water) {
+            terminal_put_ext(vx, vy, 0, 0, 0xE0123, NULL);
+        }
+    }
+
     terminal_color(fgcolor);
     terminal_put_ext(vx, vy, xoffset, yoffset, chcode1, NULL);
     // terminal_put_ext(vx+1, vy, -xoffset, yoffset, chcode2, NULL);

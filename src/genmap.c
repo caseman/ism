@@ -22,15 +22,15 @@ int xmain(int argc, char *argv[]) {
         .width = 120,
         .height = 40,
 
-        .ocean_level = 0,
+        .ocean_level = -0.075,
 
-        .land_mass_scale = 3,
-        .fault_scale = 12,
-        .erosion_scale = 20,
+        .land_mass_scale = 2,
+        .fault_scale = 5,
+        .erosion_scale = 8,
 
         .coast_complexity = 8,
         .fault_complexity = 8,
-        .erosion_complexity = 10
+        .erosion_complexity = 12
     };
     map *m = map_generate(config);
     tile_data *tile = m->tiles;
