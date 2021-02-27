@@ -12,7 +12,6 @@ configure_file(src/ism.h.in include/ism.h)
 
 add_library(fastrng STATIC src/cccompat.h src/fastrng.h src/fastrng.c)
 add_library(perlin STATIC src/perlin.h src/perlin.c)
-add_library(ini STATIC src/ini.h src/ini.c)
 add_library(map STATIC src/map.h src/map.c)
 add_library(view STATIC src/mainview.h src/mainview.c)
 
@@ -48,7 +47,7 @@ IF(APPLE)
 ENDIF(APPLE)
 # TODO Linux, etc.
 
-target_link_libraries(ism fastrng perlin ini map view
+target_link_libraries(ism fastrng perlin map view
     ${BEARLIBTERMINAL_LIB}
 )
 target_include_directories(ism PUBLIC
@@ -56,7 +55,7 @@ target_include_directories(ism PUBLIC
 )
 
 add_executable(genmap src/genmap.c)
-target_link_libraries(genmap fastrng perlin ini map)
+target_link_libraries(genmap fastrng perlin map)
 target_include_directories(genmap PUBLIC
     "${PROJECT_BINARY_DIR}/include"
 )
