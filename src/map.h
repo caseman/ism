@@ -4,31 +4,58 @@
 #define MAP_H
 
 enum map_terrain {
-    no_terrain = -1,
-    water = 0,
-    flat = 1,
-    hill = 2,
-    canyon = 3,
-    glacier = 4,
-    mountain = 5,
-    mountain_covered = 6,
-    mountain_med_seed = 7,
-    mountain_lg_seed = 8,
+    no_terrain = 0,
+    water,
+    flat,
+    hill,
+    canyon,
+    glacier,
+    mountain,
+    mountain_covered,
+    mountain_med_seed,
+    mountain_lg_seed,
+};
+
+static const char *map_terrain_names[] = {
+    [no_terrain] = "no terrain",
+    [water] = "water",
+    [flat] = "flat",
+    [hill] = "hill",
+    [canyon] = "canyon",
+    [glacier] = "glacier",
+    [mountain] = "mountain",
+    [mountain_covered] = "mountain",
+    [mountain_med_seed] = "mountain",
+    [mountain_lg_seed] = "mountain",
 };
 
 enum map_biome {
-    no_biome = -1,
-    deep_sea = 0,
-    shallow_sea = 1,
-    lake = 2,
-    marsh = 5,
+    no_biome = 0,
+    deep_sea,
+    shallow_sea,
+    lake,
+    marsh,
 
-    desert = 6,
-    grassland = 7,
-    forest = 8,
-    jungle = 9,
-    taiga = 10,
-    tundra = 11,
+    desert,
+    grassland,
+    forest,
+    jungle,
+    taiga,
+    tundra,
+};
+
+static const char *map_biome_names[] = {
+    [no_biome] = "no biome",
+    [deep_sea] = "deep sea",
+    [shallow_sea] = "shallow sea",
+    [lake] = "lake",
+    [marsh] = "marsh",
+    [desert] = "desert",
+    [grassland] = "grassland",
+    [forest] = "forest",
+    [jungle] = "jungle",
+    [taiga] = "taiga",
+    [tundra] = "tundra",
 };
 
 typedef struct {
